@@ -23077,3 +23077,602 @@ input::-webkit-inner-spin-button {
   }
 
 }
+/* =========================================
+   TASK 17 - SHOPZONE THEME SYSTEM
+   ========================================= */
+
+/* LIGHT THEME */
+:root[data-theme="light"] {
+  --bg-primary: #fffaf7;
+  --bg-secondary: #f8e8df;
+
+  --text-primary: #4b352d;
+  --text-secondary: #8a685a;
+
+  --border-color: #ead3c7;
+
+  --card-bg: #ffffff;
+  --navbar-bg: #fff8f4;
+
+  --btn-primary: #c9795b;
+  --btn-hover: #b8674a;
+  --btn-text: #ffffff;
+
+  --input-bg: #ffffff;
+
+  --accent: #d99072;
+  --accent-soft: #f5ddd2;
+
+  --shadow:
+    0 8px 25px rgba(112, 73, 57, 0.10);
+}
+
+
+/* DARK THEME */
+:root[data-theme="dark"] {
+  --bg-primary: #171311;
+  --bg-secondary: #211a17;
+
+  --text-primary: #f7ebe5;
+  --text-secondary: #c9aaa0;
+
+  --border-color: #49372f;
+
+  --card-bg: #241c19;
+  --navbar-bg: #1c1614;
+
+  --btn-primary: #d98d6f;
+  --btn-hover: #e6a187;
+  --btn-text: #ffffff;
+
+  --input-bg: #2a211e;
+
+  --accent: #e39a7c;
+  --accent-soft: #382720;
+
+  --shadow:
+    0 8px 25px rgba(0, 0, 0, 0.35);
+}
+
+
+/* Smooth theme transition */
+html,
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+body {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+/* =========================================
+   TASK 17 - THEME TOGGLE BUTTON
+   ========================================= */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 42px;
+  padding: 8px 14px;
+
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+
+  background: var(--card-bg);
+  color: var(--text-primary);
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow: var(--shadow);
+
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  background: var(--accent-soft);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+}
+
+.theme-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  line-height: 1;
+}
+
+.theme-toggle-text {
+  line-height: 1;
+}
+
+.theme-toggle:focus-visible {
+  outline: 3px solid var(--accent-soft);
+  outline-offset: 2px;
+}
+
+
+/* MOBILE */
+@media (max-width: 768px) {
+
+  .theme-toggle {
+    min-width: 42px;
+    padding: 8px 10px;
+  }
+
+  .theme-toggle-text {
+    display: none;
+  }
+}
+
+
+/* ACCESSIBILITY */
+@media (prefers-reduced-motion: reduce) {
+
+  .theme-toggle {
+    transition: none;
+  }
+
+}
+/* =========================================================
+   TASK 17 - GLOBAL LIGHT / DARK THEME OVERRIDES
+   Keep this section at the VERY BOTTOM of index.css
+========================================================= */
+
+/* ---------- PAGE ---------- */
+
+html,
+body,
+#root {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+body,
+#root {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+
+/* ---------- MAIN PAGE BACKGROUNDS ---------- */
+
+.home-page,
+.cart-page,
+.checkout-page,
+.orders-page,
+.admin-page,
+.product-form-page,
+.product-detail-page,
+.admin-orders-page,
+.peach-home-page,
+.peach-cart-page,
+.peach-checkout-page,
+.peach-orders-page,
+.peach-admin-page,
+.peach-product-detail-page,
+.peach-login-page,
+.peach-register-page {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary);
+}
+
+
+/* ---------- NAVBAR ---------- */
+
+.peach-navbar,
+.navbar {
+  background: var(--navbar-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.peach-logo-text strong,
+.peach-user-info strong,
+.peach-nav-link,
+.peach-login-link,
+.navbar a {
+  color: var(--text-primary) !important;
+}
+
+.peach-logo-text span,
+.peach-user-info span {
+  color: var(--text-secondary) !important;
+}
+
+.peach-nav-link:hover,
+.peach-nav-link.active {
+  color: var(--accent) !important;
+}
+
+
+/* ---------- CARDS ---------- */
+
+.product-card,
+.auth-card,
+.cart-item,
+.cart-summary,
+.empty-cart,
+.checkout-form-card,
+.checkout-summary,
+.empty-checkout,
+.order-card,
+.empty-orders,
+.admin-table-wrapper,
+.product-form-card,
+.product-preview-card,
+.product-detail-image-card,
+.product-detail-info,
+.product-detail-status,
+.admin-stat-card,
+.admin-orders-toolbar,
+.admin-order-card,
+.admin-orders-empty,
+.admin-orders-status,
+.admin-products-empty,
+.admin-products-status,
+.peach-product-card,
+.peach-cart-card,
+.peach-cart-summary,
+.peach-checkout-card,
+.peach-order-card,
+.peach-login-card,
+.peach-register-card,
+.peach-admin-card {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow) !important;
+
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+
+/* ---------- HEADINGS ---------- */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.product-form-header h1,
+.product-preview-card h2,
+.product-preview-card h3,
+.product-detail-info h1,
+.product-detail-description h3,
+.admin-orders-header h1,
+.admin-stat-card strong,
+.admin-order-card-header h2,
+.admin-order-items h3,
+.admin-products-empty h2,
+.products-status h2,
+.admin-product-name {
+  color: var(--text-primary) !important;
+}
+
+
+/* ---------- SECONDARY TEXT ---------- */
+
+.product-description,
+.product-category,
+.cart-header p,
+.cart-category,
+.cart-subtotal p,
+.checkout-header p,
+.checkout-item p,
+.orders-header p,
+.order-card-header p,
+.order-address p,
+.order-item p,
+.admin-page-header p,
+.admin-product-description,
+.product-form-header p,
+.product-form-card small,
+.product-photo-section > p,
+.preview-placeholder p,
+.product-preview-card > p,
+.product-breadcrumb,
+.product-detail-fallback p,
+.product-detail-description p,
+.admin-orders-header p,
+.admin-stat-card span,
+.admin-orders-toolbar p,
+.admin-order-card-header p,
+.admin-customer-details span,
+.admin-order-item p,
+.admin-order-total span,
+.admin-status-update label,
+.admin-product-summary p,
+.products-status,
+.admin-orders-empty,
+.admin-orders-status,
+.admin-products-empty,
+.admin-products-status {
+  color: var(--text-secondary) !important;
+}
+
+
+/* ---------- INPUTS ---------- */
+
+input,
+textarea,
+select,
+.form-group input,
+.form-group textarea,
+.product-filters input,
+.product-filters select,
+.product-form-card input,
+.product-form-card textarea,
+.product-form-card select,
+.admin-orders-toolbar select,
+.admin-status-update select {
+  background: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 0.75;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent) !important;
+  outline: none;
+}
+
+
+/* ---------- LABELS ---------- */
+
+label,
+.form-group label,
+.product-form-card label,
+.quantity-section label,
+.admin-orders-toolbar label {
+  color: var(--text-primary) !important;
+}
+
+
+/* ---------- BORDERS ---------- */
+
+.checkout-item,
+.order-card-header,
+.order-address,
+.order-item,
+.product-detail-description,
+.admin-table th,
+.admin-table td,
+.admin-customer-details,
+.admin-order-item,
+.admin-order-footer,
+.admin-order-card-header {
+  border-color: var(--border-color) !important;
+}
+
+
+/* ---------- TABLE ---------- */
+
+.admin-table {
+  color: var(--text-primary);
+}
+
+.admin-table th {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.admin-table td {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+
+/* ---------- SECONDARY SURFACES ---------- */
+
+.checkout-user,
+.product-image-placeholder,
+.cart-item-image,
+.product-image-container,
+.product-preview-card img,
+.preview-placeholder,
+.quantity-selector button,
+.admin-order-card-header,
+.admin-order-footer,
+.admin-product-image,
+.product-photo-section {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+
+/* ---------- PRODUCT IMAGES ---------- */
+
+.product-image,
+.admin-product-image img {
+  background: var(--card-bg) !important;
+}
+
+
+/* ---------- PRIMARY BUTTONS ---------- */
+
+.auth-button,
+.checkout-button,
+.place-order-button,
+.detail-add-cart-button,
+.admin-add-button,
+.refresh-orders-button,
+.peach-register-link,
+.peach-logout-button {
+  background: var(--btn-primary) !important;
+  color: var(--btn-text) !important;
+  border-color: var(--btn-primary) !important;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.auth-button:hover,
+.checkout-button:hover,
+.place-order-button:hover,
+.detail-add-cart-button:hover,
+.admin-add-button:hover,
+.refresh-orders-button:hover {
+  background: var(--btn-hover) !important;
+}
+
+
+/* ---------- LINKS / ACCENT ---------- */
+
+.product-price,
+.product-detail-price,
+.go-to-cart-link,
+.product-breadcrumb a,
+.admin-product-price,
+.admin-order-total strong,
+.product-name-link:hover {
+  color: var(--accent) !important;
+}
+
+
+/* ---------- CART ---------- */
+
+.peach-cart-button {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+.cart-badge {
+  background: var(--btn-primary) !important;
+  color: var(--btn-text) !important;
+}
+
+
+/* ---------- USER AVATAR ---------- */
+
+.peach-user-avatar,
+.peach-logo-icon {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+
+
+/* ---------- TOKEN COUNTDOWN ---------- */
+
+.token-expiry {
+  background: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+.token-expiry-label {
+  color: var(--text-secondary) !important;
+}
+
+.token-expiry-time {
+  color: var(--text-primary) !important;
+}
+
+
+/* ---------- THEME BUTTON ---------- */
+
+.theme-toggle {
+  background: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-soft) !important;
+}
+
+
+/* ---------- DARK MODE SPECIAL FIXES ---------- */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] img {
+  opacity: 0.96;
+}
+
+:root[data-theme="dark"] .product-card,
+:root[data-theme="dark"] .cart-item,
+:root[data-theme="dark"] .cart-summary,
+:root[data-theme="dark"] .checkout-form-card,
+:root[data-theme="dark"] .checkout-summary,
+:root[data-theme="dark"] .order-card,
+:root[data-theme="dark"] .product-detail-image-card,
+:root[data-theme="dark"] .product-detail-info,
+:root[data-theme="dark"] .product-form-card,
+:root[data-theme="dark"] .product-preview-card,
+:root[data-theme="dark"] .admin-order-card,
+:root[data-theme="dark"] .admin-table-wrapper {
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.32) !important;
+}
+
+
+/* ---------- SMOOTH THEME CHANGE ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  .product-card,
+  .cart-item,
+  .cart-summary,
+  .checkout-form-card,
+  .checkout-summary,
+  .order-card,
+  .product-detail-image-card,
+  .product-detail-info,
+  .product-form-card,
+  .product-preview-card,
+  .admin-order-card,
+  .admin-table-wrapper {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+}

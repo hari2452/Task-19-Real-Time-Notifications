@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useTheme } from "../context/ThemeContext";
 import TokenExpiryCountdown from "./TokenExpiryCountdown";
 
 function Navbar() {
@@ -9,26 +10,27 @@ function Navbar() {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
 
+  // =========================================
+  // TASK 17 - THEME
+  // =========================================
+  const { theme, toggleTheme } = useTheme();
 
-  // =====================================================
+  // =========================================
   // LOGOUT
-  // Wait until backend revokes both JWT tokens,
-  // then redirect to login.
-  // =====================================================
+  // =========================================
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
-
 
   return (
     <header className="peach-navbar">
 
       <div className="peach-nav-container">
 
-        {/* =================================================
+        {/* =====================================
             LOGO
-        ================================================= */}
+        ====================================== */}
         <Link to="/" className="peach-logo">
 
           <div className="peach-logo-icon">
@@ -43,9 +45,9 @@ function Navbar() {
         </Link>
 
 
-        {/* =================================================
+        {/* =====================================
             NAVIGATION
-        ================================================= */}
+        ====================================== */}
         <nav className="peach-nav-links">
 
           <NavLink
@@ -107,15 +109,45 @@ function Navbar() {
         </nav>
 
 
-        {/* =================================================
+        {/* =====================================
             RIGHT SIDE
-        ================================================= */}
+        ====================================== */}
         <div className="peach-nav-right">
 
 
-          {/* =================================================
+          {/* =================================
+              THEME TOGGLE - TASK 17
+          ================================== */}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={
+              theme === "light"
+                ? "Switch to dark mode"
+                : "Switch to light mode"
+            }
+            title={
+              theme === "light"
+                ? "Switch to Dark Mode"
+                : "Switch to Light Mode"
+            }
+          >
+
+            <span className="theme-toggle-icon">
+              {theme === "light" ? "🌙" : "☀️"}
+            </span>
+
+            <span className="theme-toggle-text">
+              {theme === "light" ? "Dark" : "Light"}
+            </span>
+
+          </button>
+
+
+          {/* =================================
               CART
-          ================================================= */}
+          ================================== */}
           <Link
             to="/cart"
             className="peach-cart-button"
@@ -139,9 +171,9 @@ function Navbar() {
           </Link>
 
 
-          {/* =================================================
+          {/* =================================
               LOGGED IN USER
-          ================================================= */}
+          ================================== */}
           {user ? (
 
             <div className="peach-user-section">
@@ -171,14 +203,13 @@ function Navbar() {
               </div>
 
 
-              {/* =============================================
-                  JWT TOKEN EXPIRY COUNTDOWN
-              ============================================= */}
+              {/* JWT TOKEN EXPIRY COUNTDOWN */}
               <TokenExpiryCountdown />
 
 
               {/* LOGOUT */}
               <button
+                type="button"
                 className="peach-logout-button"
                 onClick={handleLogout}
                 title="Logout"
@@ -190,9 +221,9 @@ function Navbar() {
 
           ) : (
 
-            /* ===============================================
+            /* =================================
                NOT LOGGED IN
-            =============================================== */
+            ================================== */
             <div className="peach-auth-links">
 
               <Link

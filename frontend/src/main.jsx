@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./index.css";
@@ -7,22 +7,28 @@ import App from "./App.jsx";
 
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { ThemeProvider } from "./context/ThemeContext";
 
 
 createRoot(
   document.getElementById("root")
 ).render(
-  <StrictMode>
+  
+        <React.StrictMode>
 
-    <AuthProvider>
+        <ThemeProvider>
 
-      <CartProvider>
+        <AuthProvider>
 
-        <App />
+        <CartProvider>
 
-      </CartProvider>
+          <App />
 
-    </AuthProvider>
+        </CartProvider>
 
-  </StrictMode>
+        </AuthProvider>
+
+      </ThemeProvider>
+    
+      </React.StrictMode>
 );
