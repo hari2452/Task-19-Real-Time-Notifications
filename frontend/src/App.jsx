@@ -11,6 +11,7 @@ import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ProfilePage from "./pages/ProfilePage";
 
 import AdminProducts from "./pages/admin/AdminProducts";
 import ProductForm from "./pages/admin/ProductForm";
@@ -29,7 +30,7 @@ function App() {
 
     <BrowserRouter>
 
-        <Navbar />
+      <Navbar />
 
       <Routes>
 
@@ -77,6 +78,18 @@ function App() {
           element={
             <ProtectedRoute>
               <Orders />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* Profile - Logged-in Users Only */}
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

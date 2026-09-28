@@ -30,7 +30,6 @@ export function AuthProvider({ children }) {
       localStorage.getItem("refresh_token");
 
 
-    // No tokens = user is not logged in
     if (!accessToken && !refreshToken) {
 
       setUser(null);
@@ -41,7 +40,6 @@ export function AuthProvider({ children }) {
 
     try {
 
-      // api.js automatically attaches access token
       const response =
         await api.get("/api/me");
 
@@ -76,7 +74,6 @@ export function AuthProvider({ children }) {
 
   // =====================================================
   // LOGIN
-  // Receive JWT tokens and save them
   // =====================================================
   const login = async (email, password) => {
 
@@ -94,39 +91,62 @@ export function AuthProvider({ children }) {
     } = response.data;
 
 
-    // Save ACCESS token
     localStorage.setItem(
       "access_token",
       access_token
     );
 
 
-    // Save REFRESH token
     localStorage.setItem(
       "refresh_token",
       refresh_token
     );
 
 
-    // Save logged-in user
     setUser(user);
-
 
     return response.data;
   };
 
 
   // =====================================================
-  // LOGOUT
+  // UPDATE USER
   //
-  // 1. Revoke ACCESS token
-  // 2. Revoke REFRESH token
-  // 3. Remove tokens from LocalStorage
-  // 4. Clear user state
+  // Updates the user stored in React Context.
+  // This lets Navbar/Profile update immediately without
+  // refreshing the browser.
+  // =====================================================
+  const updateUser = (updatedData) => {
+
+    setUser((currentUser) => {
+
+      if (!currentUser) {
+        return currentUser;
+      }
+
+      return {
+        ...currentUser,
+        ...updatedData,
+      };
+
+    });
+  };
+
+    // =====================================================
+  // CLEAR AUTH AFTER ACCOUNT DELETION
+  // =====================================================
+  const clearAuth = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+
+    setUser(null);
+  };
+
+  // =====================================================
+  // LOGOUT
   // =====================================================
   const logout = async () => {
 
-    // Get tokens BEFORE removing them
     const accessToken =
       localStorage.getItem("access_token");
 
@@ -134,15 +154,11 @@ export function AuthProvider({ children }) {
       localStorage.getItem("refresh_token");
 
 
-    // ===================================================
-    // STEP 1 - REVOKE ACCESS TOKEN
-    // ===================================================
-
+    // Revoke access token
     if (accessToken) {
 
       try {
 
-        // api.js automatically sends access token
         await api.post("/api/logout");
 
         console.log(
@@ -160,22 +176,10 @@ export function AuthProvider({ children }) {
     }
 
 
-    // ===================================================
-    // STEP 2 - REVOKE REFRESH TOKEN
-    // ===================================================
-
+    // Revoke refresh token
     if (refreshToken) {
 
       try {
-
-        // IMPORTANT:
-        // Use normal axios here.
-        //
-        // Do NOT use our api.js instance because
-        // api.js automatically attaches access_token.
-        //
-        // This endpoint specifically requires
-        // the REFRESH token.
 
         await axios.post(
           "http://localhost:5000/api/logout/refresh",
@@ -204,10 +208,7 @@ export function AuthProvider({ children }) {
     }
 
 
-    // ===================================================
-    // STEP 3 - REMOVE BOTH TOKENS
-    // ===================================================
-
+    // Remove tokens
     localStorage.removeItem(
       "access_token"
     );
@@ -217,10 +218,7 @@ export function AuthProvider({ children }) {
     );
 
 
-    // ===================================================
-    // STEP 4 - CLEAR USER
-    // ===================================================
-
+    // Clear logged-in user
     setUser(null);
 
   };
@@ -238,6 +236,8 @@ export function AuthProvider({ children }) {
         login,
         logout,
         checkUser,
+        updateUser,
+        clearAuth,
       }}
     >
 

@@ -417,17 +417,362 @@ def login():
 @jwt_required()
 def get_current_user():
     user_id = get_jwt_identity()
-    claims = get_jwt()
 
-    return jsonify({
-        "success": True,
-        "user": {
-            "id": int(user_id),
-            "name": claims.get("name"),
-            "email": claims.get("email"),
-            "role": claims.get("role")
-        }
-    }), 200
+    cursor = None
+
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT id, name, email, role, avatar_url, created_at
+            FROM users
+            WHERE id = %s
+        """, (user_id,))
+
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "error": "User not found"
+            }), 404
+
+        # Convert created_at to a simple date string
+        if user.get("created_at"):
+            user["created_at"] = user["created_at"].strftime("%Y-%m-%d")
+
+        return jsonify({
+            "success": True,
+            "user": {
+                "id": user["id"],
+                "name": user["name"],
+                "email": user["email"],
+                "role": user["role"],
+                "avatar_url": user["avatar_url"],
+                "created_at": user["created_at"]
+            }
+        }), 200
+
+    except Exception as e:
+        print("GET /api/me error:", e)
+
+        return jsonify({
+            "success": False,
+            "error": "Failed to fetch profile"
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+            
+            
+            
+# ------------------------------------------------
+# UPDATE CURRENT USER PROFILE
+# ------------------------------------------------
+
+@app.route("/api/me", methods=["PUT"])
+@jwt_required()
+def update_profile():
+    user_id = get_jwt_identity()
+    db = None
+    cursor = None
+
+    try:
+        data = request.get_json() or {}
+        name = data.get("name", "").strip()
+        email = data.get("email", "").strip()
+
+        if not name or not email:
+            return jsonify({
+                "success": False,
+                "message": "Name and email are required"
+            }), 400
+
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute(
+            "SELECT id FROM users WHERE email = %s AND id != %s",
+            (email, user_id)
+        )
+
+        if cursor.fetchone():
+            return jsonify({
+                "success": False,
+                "message": "Email already in use"
+            }), 409
+
+        cursor.execute(
+            """
+            UPDATE users
+            SET name = %s, email = %s
+            WHERE id = %s
+            """,
+            (name, email, user_id)
+        )
+
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Profile updated successfully",
+            "user": {
+                "id": int(user_id),
+                "name": name,
+                "email": email
+            }
+        }), 200
+
+    except Error as e:
+        if db:
+            db.rollback()
+
+        print("Update Profile Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to update profile"
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if db:
+            db.close()
+            
+            
+# ------------------------------------------------
+# CHANGE CURRENT USER PASSWORD
+# ------------------------------------------------
+
+@app.route("/api/me/password", methods=["PUT"])
+@jwt_required()
+def change_password():
+
+    user_id = get_jwt_identity()
+
+    db = None
+    cursor = None
+
+    try:
+        data = request.get_json() or {}
+
+        current_password = data.get("current_password", "")
+        new_password = data.get("new_password", "")
+        confirm_password = data.get("confirm_password", "")
+
+        # Required fields
+        if not current_password or not new_password or not confirm_password:
+            return jsonify({
+                "success": False,
+                "message": "All password fields are required"
+            }), 400
+
+        # New password must be at least 6 characters
+        if len(new_password) < 6:
+            return jsonify({
+                "success": False,
+                "message": "New password must be at least 6 characters"
+            }), 400
+
+        # New password and confirmation must match
+        if new_password != confirm_password:
+            return jsonify({
+                "success": False,
+                "message": "New password and confirm password do not match"
+            }), 400
+
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        # Get current hashed password
+        cursor.execute(
+            """
+            SELECT id, password
+            FROM users
+            WHERE id = %s
+            """,
+            (user_id,)
+        )
+
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "User not found"
+            }), 404
+
+        # Verify current password
+        password_correct = bcrypt.check_password_hash(
+            user["password"],
+            current_password
+        )
+
+        if not password_correct:
+            return jsonify({
+                "success": False,
+                "message": "Current password is incorrect"
+            }), 401
+
+        # Hash new password
+        hashed_password = bcrypt.generate_password_hash(
+            new_password
+        ).decode("utf-8")
+
+        # Update password
+        cursor.execute(
+            """
+            UPDATE users
+            SET password = %s
+            WHERE id = %s
+            """,
+            (hashed_password, user_id)
+        )
+
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Password changed successfully"
+        }), 200
+
+    except Error as e:
+
+        if db:
+            db.rollback()
+
+        print("Change Password Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to change password"
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if db:
+            db.close()
+
+
+# ------------------------------------------------
+# UPLOAD CURRENT USER AVATAR
+# ------------------------------------------------
+
+@app.route("/api/me/avatar", methods=["POST"])
+@jwt_required()
+def upload_profile_avatar():
+
+    user_id = get_jwt_identity()
+
+    db = None
+    cursor = None
+    image_path = None
+
+    try:
+        # React/Postman FormData field must be named "image"
+        if "image" not in request.files:
+            return jsonify({
+                "success": False,
+                "message": "Profile image is required"
+            }), 400
+
+        image = request.files["image"]
+
+        if not image.filename:
+            return jsonify({
+                "success": False,
+                "message": "Please select an image"
+            }), 400
+
+        if not allowed_file(image.filename):
+            return jsonify({
+                "success": False,
+                "message": "Only PNG, JPG, JPEG and WEBP images are allowed"
+            }), 400
+
+        # Generate a safe, unique filename
+        safe_name = secure_filename(image.filename)
+        extension = safe_name.rsplit(".", 1)[1].lower()
+        unique_name = f"avatar_{user_id}_{uuid.uuid4().hex}.{extension}"
+
+        image_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            unique_name
+        )
+
+        # Save image to existing uploads folder
+        image.save(image_path)
+
+        avatar_url = (
+            f"{request.host_url.rstrip('/')}"
+            f"/uploads/{unique_name}"
+        )
+
+        # Save avatar URL to logged-in user's record
+        db = get_db()
+        cursor = db.cursor()
+
+        cursor.execute(
+            """
+            UPDATE users
+            SET avatar_url = %s
+            WHERE id = %s
+            """,
+            (avatar_url, user_id)
+        )
+
+        if cursor.rowcount == 0:
+            db.rollback()
+
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
+
+            return jsonify({
+                "success": False,
+                "message": "User not found"
+            }), 404
+
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Profile picture updated successfully",
+            "avatar_url": avatar_url
+        }), 200
+
+    except (Error, OSError) as e:
+
+        if db:
+            db.rollback()
+
+        # Avoid leaving an uploaded file behind when DB/save fails
+        if image_path and os.path.exists(image_path):
+            try:
+                os.remove(image_path)
+            except OSError:
+                pass
+
+        print("Profile Avatar Upload Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to upload profile picture"
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if db:
+            db.close()
 
 
 # ------------------------------------------------
@@ -1522,7 +1867,165 @@ def my_orders():
             cursor.close()
 
         if db:
-            db.close()                                                    
+            db.close()       
+            
+            
+# =========================================
+# TASK 18 BONUS - PROFILE ACTIVITY SUMMARY
+# =========================================
+
+@app.route("/api/me/activity", methods=["GET"])
+@jwt_required()
+def profile_activity():
+
+    user_id = get_jwt_identity()
+
+    db = None
+    cursor = None
+
+    try:
+
+        db = get_db()
+
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT
+                COUNT(id) AS total_orders,
+                COALESCE(SUM(total_amount), 0) AS total_spent
+            FROM orders
+            WHERE user_id = %s
+            """,
+            (user_id,)
+        )
+
+        activity = cursor.fetchone()
+
+        return jsonify({
+            "success": True,
+            "activity": {
+                "total_orders":
+                    activity["total_orders"] or 0,
+
+                "total_spent":
+                    float(activity["total_spent"] or 0)
+            }
+        }), 200
+
+    except Error as e:
+
+        print(
+            "Profile Activity Error:",
+            e
+        )
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Unable to fetch profile activity"
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if db:
+            db.close()          
+            
+# =========================================
+# TASK 18 BONUS - DELETE ACCOUNT
+# =========================================
+
+@app.route("/api/me", methods=["DELETE"])
+@jwt_required()
+def delete_account():
+
+    user_id = get_jwt_identity()
+
+    db = None
+    cursor = None
+
+    try:
+
+        db = get_db()
+        cursor = db.cursor()
+
+        # Delete items belonging to user's orders
+        cursor.execute(
+            """
+            DELETE oi
+            FROM order_items oi
+            INNER JOIN orders o
+                ON oi.order_id = o.id
+            WHERE o.user_id = %s
+            """,
+            (user_id,)
+        )
+
+        # Delete user's orders
+        cursor.execute(
+            """
+            DELETE FROM orders
+            WHERE user_id = %s
+            """,
+            (user_id,)
+        )
+
+        # Delete old revoked JWT records
+        cursor.execute(
+            """
+            DELETE FROM revoked_tokens
+            WHERE user_id = %s
+            """,
+            (user_id,)
+        )
+
+        # Finally delete user
+        cursor.execute(
+            """
+            DELETE FROM users
+            WHERE id = %s
+            """,
+            (user_id,)
+        )
+
+        if cursor.rowcount == 0:
+            db.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "User not found"
+            }), 404
+
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Account deleted successfully"
+        }), 200
+
+    except Error as e:
+
+        if db:
+            db.rollback()
+
+        print("Delete Account Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to delete account"
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if db:
+            db.close()              
+                                                         
 
 # =========================================
 # 14. ADMIN - GET ALL ORDERS

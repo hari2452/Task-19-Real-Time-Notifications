@@ -9,10 +9,6 @@ function Navbar() {
 
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
-
-  // =========================================
-  // TASK 17 - THEME
-  // =========================================
   const { theme, toggleTheme } = useTheme();
 
   // =========================================
@@ -28,9 +24,7 @@ function Navbar() {
 
       <div className="peach-nav-container">
 
-        {/* =====================================
-            LOGO
-        ====================================== */}
+        {/* LOGO */}
         <Link to="/" className="peach-logo">
 
           <div className="peach-logo-icon">
@@ -45,9 +39,7 @@ function Navbar() {
         </Link>
 
 
-        {/* =====================================
-            NAVIGATION
-        ====================================== */}
+        {/* NAVIGATION */}
         <nav className="peach-nav-links">
 
           <NavLink
@@ -109,15 +101,10 @@ function Navbar() {
         </nav>
 
 
-        {/* =====================================
-            RIGHT SIDE
-        ====================================== */}
+        {/* RIGHT SIDE */}
         <div className="peach-nav-right">
 
-
-          {/* =================================
-              THEME TOGGLE - TASK 17
-          ================================== */}
+          {/* THEME TOGGLE */}
           <button
             type="button"
             className="theme-toggle"
@@ -145,9 +132,7 @@ function Navbar() {
           </button>
 
 
-          {/* =================================
-              CART
-          ================================== */}
+          {/* CART */}
           <Link
             to="/cart"
             className="peach-cart-button"
@@ -171,36 +156,57 @@ function Navbar() {
           </Link>
 
 
-          {/* =================================
-              LOGGED IN USER
-          ================================== */}
+          {/* LOGGED IN USER */}
           {user ? (
 
             <div className="peach-user-section">
 
 
-              {/* USER AVATAR */}
-              <div className="peach-user-avatar">
+              {/* CLICKABLE PROFILE */}
+              <Link
+                to="/profile"
+                className="peach-profile-link"
+                title="My Profile"
+              >
 
-                {user.name
-                  ?.charAt(0)
-                  .toUpperCase()}
+                {/* USER AVATAR */}
+                <div className="peach-user-avatar">
 
-              </div>
+                  {user.avatar_url ? (
+
+                    <img
+                      src={user.avatar_url}
+                      alt={user.name || "Profile"}
+                      className="peach-user-avatar-image"
+                    />
+
+                  ) : (
+
+                    <span>
+                      {user.name
+                        ?.charAt(0)
+                        .toUpperCase() || "U"}
+                    </span>
+
+                  )}
+
+                </div>
 
 
-              {/* USER NAME */}
-              <div className="peach-user-info">
+                {/* USER NAME */}
+                <div className="peach-user-info">
 
-                <span>
-                  Welcome
-                </span>
+                  <span>
+                    Welcome
+                  </span>
 
-                <strong>
-                  {user.name}
-                </strong>
+                  <strong>
+                    {user.name}
+                  </strong>
 
-              </div>
+                </div>
+
+              </Link>
 
 
               {/* JWT TOKEN EXPIRY COUNTDOWN */}
@@ -221,9 +227,7 @@ function Navbar() {
 
           ) : (
 
-            /* =================================
-               NOT LOGGED IN
-            ================================== */
+            /* NOT LOGGED IN */
             <div className="peach-auth-links">
 
               <Link
