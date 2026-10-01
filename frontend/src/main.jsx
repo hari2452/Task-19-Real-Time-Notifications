@@ -1,6 +1,6 @@
 import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-
+import { SocketProvider } from "./context/SocketContext";
 import "./index.css";
 
 import App from "./App.jsx";
@@ -16,19 +16,16 @@ createRoot(
   
         <React.StrictMode>
 
-        <ThemeProvider>
+       <ThemeProvider>
+       <AuthProvider>
+       <CartProvider>
 
-        <AuthProvider>
+      <SocketProvider>
+        <App />
+      </SocketProvider>
 
-        <CartProvider>
-
-          <App />
-
-        </CartProvider>
-
-        </AuthProvider>
-
+      </CartProvider>
+      </AuthProvider>
       </ThemeProvider>
-    
-      </React.StrictMode>
+    </React.StrictMode>
 );

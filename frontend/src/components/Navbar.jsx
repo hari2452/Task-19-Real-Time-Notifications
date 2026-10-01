@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useTheme } from "../context/ThemeContext";
 import TokenExpiryCountdown from "./TokenExpiryCountdown";
+import NotificationBell from "./NotificationBell";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -154,7 +155,11 @@ function Navbar() {
             )}
 
           </Link>
-
+          
+          {/* REAL-TIME NOTIFICATIONS */}
+            {user && (
+          <NotificationBell />
+          )}
 
           {/* LOGGED IN USER */}
           {user ? (

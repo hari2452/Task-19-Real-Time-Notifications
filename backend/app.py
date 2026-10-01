@@ -8,6 +8,7 @@ from flask_jwt_extended import (
     jwt_required, get_jwt_identity, get_jwt
 )
 from datetime import timedelta
+from flask_socketio import SocketIO, emit, join_room
 
 import os
 import uuid
@@ -16,6 +17,55 @@ from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
+
+# =========================================
+# TASK 19 - SOCKET.IO SETUP
+# =========================================
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="http://localhost:5173",
+    async_mode="eventlet"
+)
+
+# =========================================
+# TASK 19 - SOCKET.IO EVENT HANDLERS
+# =========================================
+@socketio.on("connect")
+def handle_socket_connect():
+    print(f"Socket client connected: {request.sid}")
+
+
+@socketio.on("disconnect")
+def handle_socket_disconnect():
+    print(f"Socket client disconnected: {request.sid}")
+
+
+@socketio.on("join")
+def handle_socket_join(data):
+    user_id = data.get("user_id")
+    role = data.get("role")
+
+    if not user_id:
+        emit("join_error", {
+            "message": "User ID is required"
+        })
+        return
+
+    user_room = f"user_{user_id}"
+    join_room(user_room)
+
+    print(f"User {user_id} joined {user_room}")
+
+    if role == "admin":
+        join_room("admins")
+        print(f"Admin {user_id} joined admins room")
+
+    emit("joined", {
+        "success": True,
+        "room": user_room,
+        "role": role
+    })
+
 
 # JWT configuration
 app.config["JWT_SECRET_KEY"] = "task16-jwt-secret-key-change-this-in-production"
@@ -1743,11 +1793,144 @@ def place_order():
                 )
             )
 
+            # =========================================
+            # TASK 19 BONUS 1 - CHECK LOW STOCK
+            # =========================================
+            cursor.execute(
+                """
+                SELECT id, name, stock
+                FROM products
+                WHERE id = %s
+                """,
+                (item["product_id"],)
+            )
+
+            updated_product = cursor.fetchone()
+
+            if updated_product and updated_product["stock"] <= 5:
+                item["low_stock"] = True
+                item["remaining_stock"] = updated_product["stock"]
+            else:
+                item["low_stock"] = False
+                item["remaining_stock"] = (
+                    updated_product["stock"] if updated_product else None
+                )
+
 
         # --------------------------------
         # 9. Save everything
         # --------------------------------
         db.commit()
+
+        
+        
+
+        # =========================================
+        # TASK 19 - REAL-TIME ORDER NOTIFICATION
+        # =========================================
+        # The order is already saved. If notification delivery fails,
+        # the successfully created order is not cancelled.
+        try:
+            cursor.execute(
+                """
+                SELECT name
+                FROM users
+                WHERE id = %s
+                """,
+                (user_id,)
+            )
+
+            customer = cursor.fetchone()
+            customer_name = customer["name"] if customer else "Customer"
+
+            notification_message = (
+                f"New order #{order_id} placed by "
+                f"{customer_name} — ₹{float(total_amount):.2f}"
+            )
+
+            # Save the notification for every admin.
+            cursor.execute(
+                """
+                INSERT INTO notifications
+                    (user_id, message, type)
+                SELECT
+                    id,
+                    %s,
+                    'order'
+                FROM users
+                WHERE role = 'admin'
+                """,
+                (notification_message,)
+            )
+
+            db.commit()
+
+            # Emit instantly to every connected admin.
+            socketio.emit(
+                "new_notification",
+                {
+                    "message": notification_message,
+                    "type": "order",
+                    "order_id": order_id
+                },
+                room="admins"
+            )
+
+            print(
+                "Real-time notification sent:",
+                notification_message
+            )
+
+            # =========================================
+            # TASK 19 BONUS 1 - LOW STOCK ALERTS
+            # =========================================
+            for item in validated_items:
+                if item.get("low_stock"):
+                    remaining_stock = item.get("remaining_stock", 0)
+
+                    low_stock_message = (
+                        f"Low stock alert: {item['product_name']} "
+                        f"has only {remaining_stock} item"
+                        f"{'s' if remaining_stock != 1 else ''} remaining."
+                    )
+
+                    cursor.execute(
+                        """
+                        INSERT INTO notifications
+                            (user_id, message, type)
+                        SELECT
+                            id,
+                            %s,
+                            'alert'
+                        FROM users
+                        WHERE role = 'admin'
+                        """,
+                        (low_stock_message,)
+                    )
+
+                    db.commit()
+
+                    socketio.emit(
+                        "new_notification",
+                        {
+                            "message": low_stock_message,
+                            "type": "alert",
+                            "product_id": item["product_id"],
+                            "remaining_stock": remaining_stock
+                        },
+                        room="admins"
+                    )
+
+                    print("Low stock alert sent:", low_stock_message)
+
+        except Exception as notification_error:
+            if db:
+                db.rollback()
+
+            print(
+                "Task 19 Notification Error:",
+                notification_error
+            )
 
 
         return jsonify({
@@ -2026,6 +2209,211 @@ def delete_account():
         if db:
             db.close()              
                                                          
+
+
+# =========================================
+# TASK 19 - NOTIFICATION REST APIs
+# =========================================
+
+@app.route("/api/notifications", methods=["GET"])
+@jwt_required()
+def get_notifications():
+    user_id = get_jwt_identity()
+    db = None
+    cursor = None
+
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT id, user_id, message, type, is_read, created_at
+            FROM notifications
+            WHERE user_id = %s
+            ORDER BY created_at DESC, id DESC
+            """,
+            (user_id,)
+        )
+
+        notifications = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "data": notifications
+        }), 200
+
+    except Error as e:
+        print("Get Notifications Error:", e)
+        return jsonify({
+            "success": False,
+            "message": "Unable to fetch notifications"
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
+
+
+@app.route("/api/notifications/<int:notification_id>/read", methods=["PUT"])
+@jwt_required()
+def mark_notification_read(notification_id):
+    user_id = get_jwt_identity()
+    db = None
+    cursor = None
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+
+        cursor.execute(
+            """
+            UPDATE notifications
+            SET is_read = 1
+            WHERE id = %s AND user_id = %s
+            """,
+            (notification_id, user_id)
+        )
+
+        if cursor.rowcount == 0:
+            cursor.execute(
+                """
+                SELECT id
+                FROM notifications
+                WHERE id = %s AND user_id = %s
+                """,
+                (notification_id, user_id)
+            )
+
+            if not cursor.fetchone():
+                return jsonify({
+                    "success": False,
+                    "message": "Notification not found"
+                }), 404
+
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Notification marked as read"
+        }), 200
+
+    except Error as e:
+        if db:
+            db.rollback()
+
+        print("Mark Notification Read Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to update notification"
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
+
+
+@app.route("/api/notifications/read-all", methods=["PUT"])
+@jwt_required()
+def mark_all_notifications_read():
+    user_id = get_jwt_identity()
+    db = None
+    cursor = None
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+
+        cursor.execute(
+            """
+            UPDATE notifications
+            SET is_read = 1
+            WHERE user_id = %s AND is_read = 0
+            """,
+            (user_id,)
+        )
+
+        updated_count = cursor.rowcount
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "All notifications marked as read",
+            "updated_count": updated_count
+        }), 200
+
+    except Error as e:
+        if db:
+            db.rollback()
+
+        print("Mark All Notifications Read Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to update notifications"
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
+
+
+@app.route("/api/notifications/<int:notification_id>", methods=["DELETE"])
+@jwt_required()
+def delete_notification(notification_id):
+    user_id = get_jwt_identity()
+    db = None
+    cursor = None
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+
+        cursor.execute(
+            """
+            DELETE FROM notifications
+            WHERE id = %s AND user_id = %s
+            """,
+            (notification_id, user_id)
+        )
+
+        if cursor.rowcount == 0:
+            return jsonify({
+                "success": False,
+                "message": "Notification not found"
+            }), 404
+
+        db.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Notification deleted successfully"
+        }), 200
+
+    except Error as e:
+        if db:
+            db.rollback()
+
+        print("Delete Notification Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to delete notification"
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
+
 
 # =========================================
 # 14. ADMIN - GET ALL ORDERS
@@ -2344,4 +2732,8 @@ def image_too_large(error):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.run(
+        app,
+        debug=True,
+        port=5000
+    )

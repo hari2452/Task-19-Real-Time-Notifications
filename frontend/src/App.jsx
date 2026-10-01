@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProfilePage from "./pages/ProfilePage";
 
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import ProductForm from "./pages/admin/ProductForm";
 import AdminOrders from "./pages/admin/AdminOrders";
@@ -83,7 +84,7 @@ function App() {
         />
 
 
-        {/* Profile - Logged-in Users Only */}
+        {/* Profile */}
 
         <Route
           path="/profile"
@@ -95,7 +96,21 @@ function App() {
         />
 
 
-        {/* Admin Routes */}
+        {/* =====================================
+            ADMIN DASHBOARD
+        ====================================== */}
+
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+
+
+        {/* Admin Products */}
 
         <Route
           path="/admin/products"
@@ -124,6 +139,9 @@ function App() {
           }
         />
 
+
+        {/* Admin Orders */}
+
         <Route
           path="/admin/orders"
           element={
@@ -136,7 +154,10 @@ function App() {
       </Routes>
 
     </BrowserRouter>
+
   );
+
 }
+
 
 export default App;

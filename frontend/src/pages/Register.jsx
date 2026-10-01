@@ -46,7 +46,63 @@ function Register() {
       ...currentData,
       [name]: value,
     }));
+
+    // Clear old error when user starts typing
+    if (error) {
+      setError("");
+    }
   };
+
+
+  // =====================================
+  // PASSWORD STRENGTH
+  // =====================================
+
+  const passwordChecks = {
+
+    length:
+      formData.password.length >= 8,
+
+    uppercase:
+      /[A-Z]/.test(formData.password),
+
+    lowercase:
+      /[a-z]/.test(formData.password),
+
+    number:
+      /[0-9]/.test(formData.password),
+
+    special:
+      /[^A-Za-z0-9]/.test(
+        formData.password
+      ),
+
+  };
+
+
+  const passedChecks =
+    Object.values(passwordChecks)
+      .filter(Boolean)
+      .length;
+
+
+  const passwordStrength =
+
+    !formData.password
+      ? ""
+
+      : passedChecks <= 2
+      ? "Weak"
+
+      : passedChecks <= 4
+      ? "Medium"
+
+      : "Strong";
+
+
+  const isStrongPassword =
+    Object.values(passwordChecks)
+      .every(Boolean);
 
 
   // =====================================
@@ -70,7 +126,9 @@ function Register() {
         .toLowerCase();
 
 
+    // =====================================
     // NAME VALIDATION
+    // =====================================
 
     if (!name) {
 
@@ -82,7 +140,9 @@ function Register() {
     }
 
 
+    // =====================================
     // EMAIL VALIDATION
+    // =====================================
 
     if (!email) {
 
@@ -94,19 +154,43 @@ function Register() {
     }
 
 
+    // =====================================
     // PASSWORD VALIDATION
+    // =====================================
 
-    if (formData.password.length < 6) {
+    if (!formData.password) {
 
       setError(
-        "Password must contain at least 6 characters"
+        "Password is required"
       );
 
       return;
     }
 
 
+    if (!isStrongPassword) {
+
+      setError(
+        "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number and one special character"
+      );
+
+      return;
+    }
+
+
+    // =====================================
     // CONFIRM PASSWORD
+    // =====================================
+
+    if (!formData.confirmPassword) {
+
+      setError(
+        "Please confirm your password"
+      );
+
+      return;
+    }
+
 
     if (
       formData.password !==
@@ -121,6 +205,10 @@ function Register() {
     }
 
 
+    // =====================================
+    // SEND REGISTER REQUEST
+    // =====================================
+
     try {
 
       setLoading(true);
@@ -131,7 +219,8 @@ function Register() {
         {
           name,
           email,
-          password: formData.password,
+          password:
+            formData.password,
         }
       );
 
@@ -179,7 +268,36 @@ function Register() {
     } finally {
 
       setLoading(false);
+
     }
+  };
+
+
+  // =====================================
+  // PASSWORD STRENGTH WIDTH
+  // =====================================
+
+  const getStrengthWidth = () => {
+
+    if (
+      passwordStrength === "Weak"
+    ) {
+      return "33%";
+    }
+
+    if (
+      passwordStrength === "Medium"
+    ) {
+      return "66%";
+    }
+
+    if (
+      passwordStrength === "Strong"
+    ) {
+      return "100%";
+    }
+
+    return "0%";
   };
 
 
@@ -188,7 +306,9 @@ function Register() {
     <div className="peach-auth-page register-auth-page">
 
 
-      {/* BACKGROUND DECORATIONS */}
+      {/* =====================================
+          BACKGROUND DECORATIONS
+      ====================================== */}
 
       <div className="auth-decoration auth-decoration-one" />
 
@@ -200,14 +320,14 @@ function Register() {
 
       {/* =====================================
           REGISTER CONTAINER
-      ===================================== */}
+      ====================================== */}
 
       <div className="peach-auth-container register-auth-container">
 
 
         {/* =====================================
             LEFT PANEL
-        ===================================== */}
+        ====================================== */}
 
         <div className="peach-auth-showcase register-showcase">
 
@@ -254,10 +374,13 @@ function Register() {
 
 
             <h1>
+
               Your shopping
+
               <span>
                 {" "}journey starts here.
               </span>
+
             </h1>
 
 
@@ -368,7 +491,7 @@ function Register() {
 
         {/* =====================================
             RIGHT REGISTER FORM
-        ===================================== */}
+        ====================================== */}
 
         <div className="peach-auth-form-side register-form-side">
 
@@ -460,7 +583,7 @@ function Register() {
 
             {/* =====================================
                 FORM
-            ===================================== */}
+            ====================================== */}
 
             <form
               onSubmit={handleSubmit}
@@ -468,7 +591,9 @@ function Register() {
             >
 
 
-              {/* NAME */}
+              {/* =====================================
+                  NAME
+              ====================================== */}
 
               <div className="peach-form-group">
 
@@ -502,7 +627,9 @@ function Register() {
 
 
 
-              {/* EMAIL */}
+              {/* =====================================
+                  EMAIL
+              ====================================== */}
 
               <div className="peach-form-group">
 
@@ -536,7 +663,9 @@ function Register() {
 
 
 
-              {/* PASSWORD */}
+              {/* =====================================
+                  PASSWORD
+              ====================================== */}
 
               <div className="peach-form-group">
 
@@ -549,7 +678,7 @@ function Register() {
 
 
                   <span className="secure-text">
-                    Minimum 6 characters
+                    Strong password required
                   </span>
 
                 </div>
@@ -575,7 +704,7 @@ function Register() {
                     placeholder="Create your password"
                     autoComplete="new-password"
                     disabled={loading}
-                    minLength="6"
+                    minLength="8"
                     required
                   />
 
@@ -605,11 +734,166 @@ function Register() {
 
                 </div>
 
+
+
+                {/* =====================================
+                    PASSWORD STRENGTH
+                ====================================== */}
+
+                {formData.password && (
+
+                  <div className="register-password-strength">
+
+
+                    <div className="register-strength-header">
+
+                      <span>
+                        Password Strength
+                      </span>
+
+
+                      <strong
+                        className={
+                          `register-strength-${passwordStrength.toLowerCase()}`
+                        }
+                      >
+                        {passwordStrength}
+                      </strong>
+
+                    </div>
+
+
+
+                    {/* STRENGTH BAR */}
+
+                    <div className="register-strength-bar">
+
+                      <div
+                        className={
+                          `register-strength-fill register-strength-${passwordStrength.toLowerCase()}`
+                        }
+                        style={{
+                          width:
+                            getStrengthWidth(),
+                        }}
+                      />
+
+                    </div>
+
+
+
+                    {/* PASSWORD RULES */}
+
+                    <div className="register-password-rules">
+
+
+                      <span
+                        className={
+                          passwordChecks.length
+                            ? "passed"
+                            : ""
+                        }
+                      >
+
+                        {passwordChecks.length
+                          ? "✓"
+                          : "○"
+                        }
+
+                        {" "}8+ characters
+
+                      </span>
+
+
+
+                      <span
+                        className={
+                          passwordChecks.uppercase
+                            ? "passed"
+                            : ""
+                        }
+                      >
+
+                        {passwordChecks.uppercase
+                          ? "✓"
+                          : "○"
+                        }
+
+                        {" "}Uppercase letter
+
+                      </span>
+
+
+
+                      <span
+                        className={
+                          passwordChecks.lowercase
+                            ? "passed"
+                            : ""
+                        }
+                      >
+
+                        {passwordChecks.lowercase
+                          ? "✓"
+                          : "○"
+                        }
+
+                        {" "}Lowercase letter
+
+                      </span>
+
+
+
+                      <span
+                        className={
+                          passwordChecks.number
+                            ? "passed"
+                            : ""
+                        }
+                      >
+
+                        {passwordChecks.number
+                          ? "✓"
+                          : "○"
+                        }
+
+                        {" "}Number
+
+                      </span>
+
+
+
+                      <span
+                        className={
+                          passwordChecks.special
+                            ? "passed"
+                            : ""
+                        }
+                      >
+
+                        {passwordChecks.special
+                          ? "✓"
+                          : "○"
+                        }
+
+                        {" "}Special character
+
+                      </span>
+
+
+                    </div>
+
+                  </div>
+
+                )}
+
               </div>
 
 
 
-              {/* CONFIRM PASSWORD */}
+              {/* =====================================
+                  CONFIRM PASSWORD
+              ====================================== */}
 
               <div className="peach-form-group">
 
@@ -638,6 +922,7 @@ function Register() {
                     placeholder="Enter your password again"
                     autoComplete="new-password"
                     disabled={loading}
+                    minLength="8"
                     required
                   />
 
@@ -667,11 +952,38 @@ function Register() {
 
                 </div>
 
+
+
+                {/* PASSWORD MATCH MESSAGE */}
+
+                {formData.confirmPassword && (
+
+                  <div
+                    className={
+                      formData.password ===
+                      formData.confirmPassword
+                        ? "register-password-match"
+                        : "register-password-mismatch"
+                    }
+                  >
+
+                    {formData.password ===
+                    formData.confirmPassword
+                      ? "✓ Passwords match"
+                      : "✕ Passwords do not match"
+                    }
+
+                  </div>
+
+                )}
+
               </div>
 
 
 
-              {/* REGISTER BUTTON */}
+              {/* =====================================
+                  REGISTER BUTTON
+              ====================================== */}
 
               <button
                 type="submit"
